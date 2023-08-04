@@ -1,0 +1,56 @@
+version: '3.3'
+
+services:
+    proxy:
+        image: nginx:stable-alpine
+        container_name: apartnomore-proxy
+        restart: always
+        ports:
+            - '80:80'
+            - '443:443'
+        volumes:
+            - ./letsencrypt:/data/letsencrypt/
+            - ./nginx-h5bp/server-configs-nginx-master:/etc/nginx/
+            - /home/manager/nginx-logs:/var/log/nginx/
+            - /home/manager/apartnomore-upload:/data/images/
+            - /etc/letsencrypt:/etc/letsencrypt/
+    mysql:
+        restart: always
+        command: --default-authentication-plugin=mysql_native_password
+        image: mysql:latest
+        container_name: apartnomore-mysql
+        hostname: apartnomore-mysql
+        volumes:
+            - /home/manager/apartnomore-mysql:/data/db
+        env_file:
+            - .env
+        ports:
+            - '3306'
+        healthcheck:
+            test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+            timeout: 20s
+            retries: 10
+    server:
+        image: apartnomore/server
+        container_name: apartnomore-server
+        hostname: apartnomore-server
+        restart: always
+        build:
+            context: ./apartnomore-server
+            dockerfile: Dockerfile
+        env_file:
+            - .env
+        depends_on:
+            mysql:
+                condition: service_healthy
+        volumes:
+            - /home/manager/apartnomore-upload:/workspace/app/images
+    client:
+        image: apartnomore/client
+        container_name: apartnomore-client
+        hostname: apartnomore-client
+        restart: always
+        env_file:
+            - .env
+        build:
+            context: ./apartnomore-client

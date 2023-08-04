@@ -1,0 +1,9 @@
+apartnomore-client/
+apartnomore-server/
+apartnomore-docs/
+test data/
+.cache/
+server/
+mockup
+.env
+dh4096.pem
